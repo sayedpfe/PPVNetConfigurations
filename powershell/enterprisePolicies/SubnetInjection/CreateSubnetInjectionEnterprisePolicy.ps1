@@ -109,7 +109,7 @@ function CreateSubnetInjectionEnterprisePolicy
 CreateSubnetInjectionEnterprisePolicy -subscriptionId $subscriptionId `
     -resourceGroup $resourceGroupName `
     -enterprisePolicyName $enterprisePolicyName `
-    -enterprisePolicylocation 'australia' `
+    -enterprisePolicylocation 'unitedstates' `
     -primaryVnetId $vnetIdAE `
     -primarySubnetName $vNetSubnetNameAE `
     -secondaryVnetId $vnetIdASE `
