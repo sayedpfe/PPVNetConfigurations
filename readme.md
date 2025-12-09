@@ -242,9 +242,16 @@ After deployment, test the connection from your Power Platform environment:
 
 3. **Verify Network Connectivity**:
    ```powershell
-   # Test network connectivity
-   Test-NetworkConnectivity -EnvironmentId "your-env-id" -RemoteHost "192.168.2.x" -RemotePort 443
+   # First, get the Key Vault private IP address
+   $privateEndpoint = Get-AzPrivateEndpoint -Name "kv-power-app-2025-private-endpoint" -ResourceGroupName "PPVNetUS-rs"
+   $networkInterface = Get-AzNetworkInterface -ResourceId ($privateEndpoint.NetworkInterfaces[0].Id)
+   $privateIpAddress = $networkInterface.IpConfigurations[0].PrivateIpAddress
+   Write-Host "Key Vault Private IP: $privateIpAddress"
+   
+   # Test network connectivity using the private IP
+   Test-NetworkConnectivity -EnvironmentId "your-env-id" -RemoteHost $privateIpAddress -RemotePort 443
    ```
+   Expected: Connection should succeed
 
 ---
 

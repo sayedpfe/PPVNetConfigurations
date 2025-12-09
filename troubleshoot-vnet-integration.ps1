@@ -215,13 +215,30 @@ Write-Host "  • Environment ID: $powerPlatformEnvironmentId" -ForegroundColor 
 Write-Host "  • Enterprise Policy: $enterprisePolicyName" -ForegroundColor Gray
 Write-Host "  • VNets: $vNetNameAE, $vNetNameASE" -ForegroundColor Gray
 
+# Try to get Key Vault private IP for connectivity test
+try {
+    $privateEndpoint = Get-AzPrivateEndpoint -Name "$keyVaultName-private-endpoint" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
+    if ($privateEndpoint) {
+        $networkInterface = Get-AzNetworkInterface -ResourceId ($privateEndpoint.NetworkInterfaces[0].Id) -ErrorAction SilentlyContinue
+        $privateIpAddress = $networkInterface.IpConfigurations[0].PrivateIpAddress
+        Write-Host "  • Key Vault Private IP: $privateIpAddress" -ForegroundColor Gray
+    }
+} catch {
+    # Silently continue if unable to get private IP
+}
+
 Write-Host "`nUseful Commands:" -ForegroundColor White
 Write-Host "  # Check environment region" -ForegroundColor Gray
 Write-Host "  Get-EnvironmentRegion -EnvironmentId '$powerPlatformEnvironmentId'" -ForegroundColor Cyan
 Write-Host "`n  # Test DNS resolution" -ForegroundColor Gray
 Write-Host "  Test-DnsResolution -EnvironmentId '$powerPlatformEnvironmentId' -HostName '$keyVaultName.vault.azure.net'" -ForegroundColor Cyan
-Write-Host "`n  # Test network connectivity" -ForegroundColor Gray
-Write-Host "  Test-NetworkConnectivity -EnvironmentId '$powerPlatformEnvironmentId' -RemoteHost '<IP>' -RemotePort 443" -ForegroundColor Cyan
+Write-Host "`n  # Test network connectivity to Key Vault" -ForegroundColor Gray
+if ($privateIpAddress) {
+    Write-Host "  Test-NetworkConnectivity -EnvironmentId '$powerPlatformEnvironmentId' -RemoteHost '$privateIpAddress' -RemotePort 443" -ForegroundColor Cyan
+} else {
+    Write-Host "  Test-NetworkConnectivity -EnvironmentId '$powerPlatformEnvironmentId' -RemoteHost '<Key-Vault-Private-IP>' -RemotePort 443" -ForegroundColor Cyan
+    Write-Host "  (Replace <Key-Vault-Private-IP> with your Key Vault's private endpoint IP address)" -ForegroundColor Yellow
+}
 
 Write-Host "`nAdditional Resources:" -ForegroundColor White
 Write-Host "  • Power Platform Admin Center: https://admin.powerplatform.microsoft.com" -ForegroundColor Cyan
