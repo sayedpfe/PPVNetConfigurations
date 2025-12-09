@@ -324,6 +324,10 @@ If issues persist:
 - **`troubleshoot-vnet-integration.ps1`**: Comprehensive VNet integration diagnostics
 - **`verify-environment-details.ps1`**: Detailed environment verification with retry logic
 
+### Custom Connector Simulation Scripts
+- **`deploy-internal-api.ps1`**: Deploy a private Web API to simulate internal API scenarios
+- **`test-internal-api.ps1`**: Test connectivity to the internal API from Power Platform
+
 ### Enterprise Policy Scripts (in `powershell/enterprisePolicies/`)
 - **`InstallPowerAppsCmdlets.ps1`**: Install required PowerShell modules
 - **`SetupSubscriptionForPowerPlatform.ps1`**: Register subscription for Power Platform
@@ -331,6 +335,111 @@ If issues persist:
 - **`SubnetInjection/CreateSubnetInjectionEnterprisePolicy.ps1`**: Create enterprise policy
 - **`SubnetInjection/NewSubnetInjection.ps1`**: Apply VNet injection to environment
 - **`SubnetInjection/RevertSubnetInjection.ps1`**: Remove VNet injection from environment
+
+---
+
+## Custom Connector Simulation
+
+This solution includes scripts to deploy and test a private internal API that simulates real-world custom connector scenarios where Power Platform needs to access internal APIs.
+
+### What It Does
+- Deploys an Azure App Service (Web API) with **public access disabled**
+- Configures a **private endpoint** in your VNet with a private IP address
+- Sets up **Private DNS** for name resolution within the VNet
+- Creates sample API endpoints that are **only accessible through VNet integration**
+
+### Deploy Internal API
+
+Run the deployment script to create the private API:
+
+```powershell
+.\deploy-internal-api.ps1 -WebAppName "my-internal-api-demo"
+```
+
+**What gets deployed:**
+- Azure App Service Plan (Basic B1 tier)
+- Azure Web App with public access disabled
+- Private Endpoint in your VNet (gets a private IP like 192.168.2.x)
+- Private DNS Zone (privatelink.azurewebsites.net)
+- Sample API with these endpoints:
+  - `GET /api/health` - Health check
+  - `GET /api/data` - Sample data  
+  - `POST /api/echo` - Echo service
+
+**Deployment takes ~3-5 minutes**. Wait an additional 5-10 minutes for private endpoint DNS propagation.
+
+### Test Internal API Access
+
+After deployment, verify Power Platform can access the API:
+
+```powershell
+.\test-internal-api.ps1 -WebAppName "my-internal-api-demo"
+```
+
+**The test checks:**
+1. ✅ DNS resolution (should resolve to private IP)
+2. ✅ Network connectivity (port 443)
+3. 📋 Configuration summary
+
+### Create Custom Connector in Power Platform
+
+1. **In Power Apps or Power Automate:**
+   - Go to **Data** → **Custom Connectors** → **New custom connector** → **Create from blank**
+
+2. **General Tab:**
+   - **Host**: `your-web-app-name.azurewebsites.net`
+   - **Base URL**: `/`
+
+3. **Security Tab:**
+   - **Authentication type**: No authentication (for demo)
+   - For production: Configure API Key, OAuth, etc.
+
+4. **Definition Tab - Add Actions:**
+   
+   **Health Check Action:**
+   - **Summary**: Check API Health
+   - **Operation ID**: GetHealth
+   - **Verb**: GET
+   - **URL**: `/api/health`
+
+   **Get Data Action:**
+   - **Summary**: Get Internal Data
+   - **Operation ID**: GetData
+   - **Verb**: GET
+   - **URL**: `/api/data`
+
+   **Echo Action:**
+   - **Summary**: Echo Test
+   - **Operation ID**: PostEcho
+   - **Verb**: POST
+   - **URL**: `/api/echo`
+   - **Body**: Add a parameter for JSON input
+
+5. **Test Tab:**
+   - Create a connection
+   - Test each action
+   - Should successfully connect through VNet! 🎉
+
+### Verify It's Actually Private
+
+To confirm the API is truly private and only accessible through VNet:
+
+```powershell
+# Try to access from public internet (should fail)
+Invoke-WebRequest -Uri "https://your-web-app-name.azurewebsites.net/api/health"
+# Expected: Connection timeout or 403 Forbidden
+
+# But from Power Platform with VNet integration - should succeed!
+# Test using the custom connector you created
+```
+
+### Use Cases
+
+This simulation demonstrates common scenarios:
+- **Internal line-of-business APIs**: Access on-premises or private Azure APIs
+- **Database APIs**: Connect to APIs that access private databases
+- **Secure microservices**: Integrate with backend services not exposed to internet
+- **Compliance scenarios**: Keep data flows within private networks
 
 ---
 
