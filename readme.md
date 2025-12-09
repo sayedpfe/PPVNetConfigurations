@@ -328,6 +328,11 @@ If issues persist:
 - **`deploy-internal-api.ps1`**: Deploy a private Web API to simulate internal API scenarios
 - **`test-internal-api.ps1`**: Test connectivity to the internal API from Power Platform
 
+### Network Security Group (NSG) Scripts
+- **`configure-nsg-rules.ps1`**: Add custom security rules to NSGs for enhanced security
+- **`cleanup-nsgs.ps1`**: Remove unnecessary or unassociated NSGs
+- **`NSG-BEST-PRACTICES.md`**: Comprehensive guide on NSG usage for Power Platform
+
 ### Enterprise Policy Scripts (in `powershell/enterprisePolicies/`)
 - **`InstallPowerAppsCmdlets.ps1`**: Install required PowerShell modules
 - **`SetupSubscriptionForPowerPlatform.ps1`**: Register subscription for Power Platform
@@ -440,6 +445,70 @@ This simulation demonstrates common scenarios:
 - **Database APIs**: Connect to APIs that access private databases
 - **Secure microservices**: Integrate with backend services not exposed to internet
 - **Compliance scenarios**: Keep data flows within private networks
+
+---
+
+## Network Security Groups (NSGs)
+
+### Do You Need NSGs?
+
+**Short answer:** NSGs are **optional** for Power Platform VNet integration. The solution works without them because private endpoints and VNet integration provide network isolation.
+
+**Use NSGs if you need:**
+- Defense-in-depth security (multiple layers)
+- Explicit traffic control for compliance
+- Granular allow/deny rules
+- Audit trail of network policies
+
+### Configure NSG Rules
+
+Add custom security rules to your NSGs for enhanced security:
+
+```powershell
+# Preview changes first
+.\configure-nsg-rules.ps1 -WhatIf
+
+# Apply security rules to all NSGs
+.\configure-nsg-rules.ps1
+```
+
+**What it configures:**
+- **Power Platform subnets**: Allow HTTPS/SQL outbound, deny internet inbound
+- **Private Endpoint subnets**: Allow HTTPS from VNet
+- **Key Vault subnets**: Allow Key Vault service endpoint traffic
+- **Default subnets**: Basic VNet security rules
+
+### Clean Up Unnecessary NSGs
+
+Remove NSGs that aren't needed:
+
+```powershell
+# See what would be removed
+.\cleanup-nsgs.ps1 -WhatIf
+
+# Remove unassociated NSGs only (safe)
+.\cleanup-nsgs.ps1 -CleanupMode RemoveUnassociated
+
+# Interactive cleanup
+.\cleanup-nsgs.ps1 -CleanupMode Interactive
+```
+
+### Best Practices
+
+📖 **Read the comprehensive guide:** [NSG-BEST-PRACTICES.md](NSG-BEST-PRACTICES.md)
+
+The guide covers:
+- Which subnets actually need NSGs
+- Recommended security rules for each subnet type
+- Three security scenarios (Minimal, Moderate, Maximum)
+- Common troubleshooting issues
+- NSG limitations with Private Link
+
+**Key insights:**
+- ⚠️ Private endpoints **bypass NSG rules** (by design)
+- ✅ NSGs are most useful on Power Platform delegated subnets
+- ℹ️ Most deployments work fine without any custom NSG rules
+- 🛡️ Use NSGs for compliance and defense-in-depth
 
 ---
 
